@@ -1,0 +1,1017 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+  <title>Kentucky River Watershed Watch</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      color: #24332d;
+    }
+
+    /* Main layout */
+    #app {
+      display: flex;
+      height: 100vh;
+      width: 100%;
+    }
+
+    /* Sidebar */
+    #sidebar {
+      width: 330px;
+      min-width: 330px;
+      background: #f8faf8;
+      overflow-y: auto;
+      border-right: 1px solid #d5ded7;
+      z-index: 1000;
+      padding: 22px;
+    }
+
+    .sidebar-title {
+      color: #185b42;
+      font-size: 23px;
+      font-weight: bold;
+      margin: 0 0 8px;
+    }
+
+    .subtitle {
+      color: #687970;
+      font-size: 13px;
+      line-height: 1.5;
+      margin-bottom: 22px;
+    }
+
+    /* Collapsible sections */
+    details {
+      background: white;
+      border: 1px solid #dbe5de;
+      border-radius: 7px;
+      margin-bottom: 14px;
+      overflow: hidden;
+    }
+
+    summary {
+      background: #e9f1ec;
+      padding: 14px;
+      cursor: pointer;
+      font-weight: bold;
+      color: #185b42;
+    }
+
+    .section-content {
+      padding: 14px;
+    }
+
+    .radio-option {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 3px;
+      cursor: pointer;
+    }
+
+    input[type="radio"] {
+      accent-color: #247454;
+      width: 16px;
+      height: 16px;
+    }
+
+    .description {
+      font-size: 13px;
+      line-height: 1.65;
+      color: #4b5e53;
+    }
+
+    /* Map */
+    #map-container {
+      flex: 1;
+      position: relative;
+      min-width: 0;
+    }
+
+    #map {
+      height: 100%;
+      width: 100%;
+    }
+
+    /* Map title overlay */
+    #map-title {
+      position: absolute;
+      top: 18px;
+      left: 55px;
+      z-index: 800;
+      background: rgba(20, 83, 60, 0.94);
+      color: white;
+      padding: 13px 20px;
+      border-radius: 6px;
+      box-shadow: 0 3px 12px #0002;
+      pointer-events: none;
+    }
+
+    #map-title h1 {
+      font-size: 19px;
+      margin: 0;
+    }
+
+    #map-title p {
+      font-size: 12px;
+      margin: 5px 0 0;
+      opacity: 0.85;
+    }
+
+    /* Dynamic legend */
+    .legend {
+      background: white;
+      padding: 16px;
+      border-radius: 7px;
+      box-shadow: 0 2px 12px #0003;
+      width: 230px;
+      max-width: 75vw;
+      line-height: 1.5;
+    }
+
+    .legend h3 {
+      margin: 0 0 5px;
+      font-size: 16px;
+      color: #185b42;
+    }
+
+    .legend-description {
+      font-size: 12px;
+      color: #53635a;
+      margin-bottom: 12px;
+    }
+
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 12px;
+      margin: 7px 0;
+    }
+
+    .legend-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 1px solid #777;
+      flex-shrink: 0;
+    }
+
+    .legend-note {
+      margin-top: 12px;
+      padding-top: 9px;
+      border-top: 1px solid #ddd;
+      font-size: 11px;
+      color: #6b746e;
+    }
+
+    /* Status counter */
+    #status {
+      font-size: 12px;
+      color: #65746b;
+      padding-top: 10px;
+      border-top: 1px solid #dbe5de;
+    }
+
+    /* Popup */
+    .popup-title {
+      font-weight: bold;
+      color: #185b42;
+      font-size: 15px;
+      margin-bottom: 8px;
+    }
+
+    .popup-row {
+      font-size: 12px;
+      margin: 5px 0;
+    }
+
+    .popup-row strong {
+      color: #34483c;
+    }
+
+    /* Small screens */
+    @media (max-width: 700px) {
+      #app {
+        flex-direction: column;
+      }
+
+      #sidebar {
+        width: 100%;
+        min-width: 0;
+        max-height: 35vh;
+      }
+
+      #map-container {
+        min-height: 65vh;
+      }
+
+      #map-title {
+        left: 50px;
+        right: 10px;
+        top: 10px;
+        padding: 9px 12px;
+      }
+
+      #map-title h1 {
+        font-size: 14px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="app">
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar">
+
+    <h2 class="sidebar-title">
+      Kentucky River Health
+    </h2>
+
+    <p class="subtitle">
+      Kentucky River Watershed Watch<br>
+      Interactive Water Quality Explorer
+    </p>
+
+    <!-- DATA SELECTION -->
+    <details open>
+      <summary>Water Quality Data</summary>
+
+      <div class="section-content">
+
+        <label class="radio-option">
+          <input type="radio"
+                 name="variable"
+                 value="ecoli" checked>
+          E. coli
+        </label>
+
+        <label class="radio-option">
+          <input type="radio"
+                 name="variable"
+                 value="ph">
+          pH
+        </label>
+
+        <label class="radio-option">
+          <input type="radio"
+                 name="variable"
+                 value="oxygen">
+          Dissolved Oxygen
+        </label>
+
+        <label class="radio-option">
+          <input type="radio"
+                 name="variable"
+                 value="temperature">
+          Water Temperature
+        </label>
+
+      </div>
+    </details>
+
+    <!-- ABOUT SECTION -->
+    <details open>
+      <summary>About This Map</summary>
+
+      <div class="section-content description">
+
+        <p>
+          This interactive map explores water
+          quality measurements collected at
+          monitoring locations across Kentucky.
+        </p>
+
+        <p>
+          Select a parameter to visualize its
+          spatial distribution. Each circle
+          represents a sampling location.
+        </p>
+
+        <p>
+          Click a circle to view the available
+          water-quality measurements.
+        </p>
+
+        <p>
+          <strong>Data Source:</strong><br>
+          Kentucky River Watershed Watch
+        </p>
+
+        <p>
+          <strong>Map Created By:</strong><br>
+          Vicky Apostolides
+        </p>
+
+      </div>
+    </details>
+
+    <!-- DATA INTERPRETATION -->
+    <details>
+      <summary>Understanding the Data</summary>
+
+      <div class="section-content description">
+        <p>
+          <strong>E. coli:</strong>
+          An indicator of fecal contamination
+          in surface water.
+        </p>
+
+        <p>
+          <strong>pH:</strong>
+          Measures how acidic or basic
+          the water is.
+        </p>
+
+        <p>
+          <strong>Dissolved Oxygen:</strong>
+          Measures oxygen available in water
+          for aquatic organisms.
+        </p>
+
+        <p>
+          <strong>Temperature:</strong>
+          Influences aquatic ecosystems,
+          oxygen solubility, and biological
+          processes.
+        </p>
+      </div>
+    </details>
+
+    <div id="status" aria-live="polite">
+      Loading monitoring locations...
+    </div>
+
+  </aside>
+
+  <!-- MAP -->
+  <main id="map-container">
+
+    <div id="map"></div>
+
+    <div id="map-title">
+      <h1>Kentucky River Watershed Watch</h1>
+      <p id="active-variable">
+        E. coli Monitoring Locations
+      </p>
+    </div>
+
+  </main>
+
+</div>
+
+<!-- Leaflet JavaScript -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+</script>
+
+<script>
+
+  const map = L.map("map", {
+    center: [37.8, -84.3],
+    zoom: 7,
+    zoomControl: true
+  });
+
+  var Esri_NatGeoWorldMap = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/NatGeo_World_Map/MapServer/tile/{z}/{y}/{x}', {
+	attribution: 'Tiles &copy; Esri &mdash; National Geographic, Esri, DeLorme, NAVTEQ, UNEP-WCMC, USGS, NASA, ESA, METI, NRCAN, GEBCO, NOAA, iPC',
+	maxZoom: 16
+}).addTo(map);
+
+  L.control.scale({
+    position: "bottomleft",
+    imperial: true,
+    metric: true
+  }).addTo(map);
+
+
+  const variables = {
+
+    ecoli: {
+      label: "E. coli",
+      unit: "CFU/100 mL",
+      description:
+        "Indicator of fecal contamination. " +
+        "Higher values indicate greater " +
+        "measured bacterial concentrations.",
+
+      breaks: [0, 126, 235, 1000],
+
+      colors: [
+        "#2a9d8f",
+        "#e9c46a",
+        "#f4a261",
+        "#e76f51"
+      ],
+
+      labels: [
+        "Below 126",
+        "126 to <235",
+        "235 to <1,000",
+        "1,000 or greater"
+      ]
+    },
+
+    ph: {
+      label: "pH",
+      unit: "pH units",
+      description:
+        "Measures acidity and alkalinity. " +
+        "Values below 7 are acidic, while " +
+        "values above 7 are basic.",
+
+      breaks: [0, 6.5, 7.5, 8.5],
+
+      colors: [
+        "#d95f0e",
+        "#fee08b",
+        "#66bd63",
+        "#3288bd"
+      ],
+
+      labels: [
+        "Below 6.5",
+        "6.5 to <7.5",
+        "7.5 to <8.5",
+        "8.5 or greater"
+      ]
+    },
+
+    oxygen: {
+      label: "Dissolved Oxygen",
+      unit: "mg/L",
+      description:
+        "Dissolved oxygen is essential " +
+        "for aquatic organisms. Low " +
+        "concentrations can stress aquatic life.",
+
+      breaks: [0, 3, 5, 8],
+
+      colors: [
+        "#d73027",
+        "#fc8d59",
+        "#91bfdb",
+        "#4575b4"
+      ],
+
+      labels: [
+        "Below 3 mg/L",
+        "3 to <5 mg/L",
+        "5 to <8 mg/L",
+        "8 mg/L or greater"
+      ]
+    },
+
+    temperature: {
+      label: "Water Temperature",
+      unit: "°C",
+      description:
+        "Water temperature influences " +
+        "aquatic organisms, metabolic " +
+        "activity, and dissolved oxygen.",
+
+      breaks: [0, 10, 20, 30],
+
+      colors: [
+        "#4575b4",
+        "#91bfdb",
+        "#fee090",
+        "#d73027"
+      ],
+
+      labels: [
+        "Below 10°C",
+        "10 to <20°C",
+        "20 to <30°C",
+        "30°C or greater"
+      ]
+    }
+
+  };
+
+
+  const fieldAliases = {
+    ecoli: [
+      "ecoli", "e_coli", "Ecoli",
+      "E_COLI", "ecoli_value"
+    ],
+
+    ph: [
+      "ph", "pH", "PH"
+    ],
+
+    oxygen: [
+      "oxygen", "dissolved_oxygen",
+      "do", "DO", "DO_mgL"
+    ],
+
+    temperature: [
+      "temperature", "temp",
+      "water_temp", "temp_c", "Temp"
+    ]
+  };
+
+  function getValue(properties, variable) {
+
+    const aliases = fieldAliases[variable];
+
+    for (const field of aliases) {
+
+      if (
+        Object.prototype.hasOwnProperty.call(
+          properties, field
+        )
+      ) {
+
+        const raw = properties[field];
+
+        if (
+          raw === null ||
+          raw === undefined ||
+          String(raw).trim() === ""
+        ) {
+          continue;
+        }
+
+        const value = Number(raw);
+
+        if (Number.isFinite(value)) {
+          return value;
+        }
+      }
+    }
+
+    return null;
+  }
+
+
+  function getColor(value, variable) {
+
+    if (value === null) {
+      return "#a6a6a6";
+    }
+
+    const config = variables[variable];
+
+    const breaks = config.breaks;
+
+    for (let i = 1; i < breaks.length; i++) {
+
+      if (value < breaks[i]) {
+        return config.colors[i - 1];
+      }
+
+    }
+
+    return config.colors[
+      config.colors.length - 1
+    ];
+  }
+
+
+  let selectedVariable = "ecoli";
+  let geojsonData = null;
+  let markerLayer = null;
+
+  var minRadius = 4;
+  var maxRadius = 28;
+
+  var maxValues = {
+    ecoli: 1000,
+    ph: 14,
+    oxygen: 15,
+    temperature: 40
+  };
+
+  function calcRadius(val) {
+    if (val === null || val <= 0) return minRadius;
+    var maxValue = maxValues[selectedVariable];
+    var radius = Math.pow(val / maxValue, .5) * maxRadius;
+    return Math.max(minRadius, Math.min(maxRadius, radius));
+  }
+
+  function markerStyle(feature) {
+
+    const value = getValue(
+      feature.properties || {},
+      selectedVariable
+    );
+
+    const color = getColor(
+      value,
+      selectedVariable
+    );
+
+    return {
+      radius: calcRadius(value),
+      color: "#263a32",
+      weight: 0.8,
+      opacity: 0.9,
+      fillColor: color,
+      fillOpacity: 0.8
+    };
+  }
+
+
+  function formatValue(value, variable) {
+
+    if (value === null) {
+      return "No data";
+    }
+
+    const decimals =
+      variable === "ph" ? 2 :
+      variable === "ecoli" ? 0 : 1;
+
+    return value.toLocaleString(
+      undefined,
+      { maximumFractionDigits: decimals }
+    ) + " " + variables[variable].unit;
+  }
+
+  function escapeHTML(value) {
+    return String(value)
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+  }
+
+  function createPopup(feature) {
+
+    const p = feature.properties || {};
+
+    const siteName =
+      p.name || p.site_name ||
+      p.site_id || "Monitoring Location";
+
+    let html =
+      '<div class="popup-title">' +
+      escapeHTML(siteName) +
+      '</div>';
+
+    for (const key of Object.keys(variables)) {
+
+      const value = getValue(p, key);
+
+      html +=
+        '<div class="popup-row">' +
+        '<strong>' +
+        escapeHTML(variables[key].label) +
+        ':</strong> ' +
+        escapeHTML(formatValue(value, key)) +
+        '</div>';
+    }
+
+    return html;
+  }
+
+
+  function drawMarkers() {
+
+    if (!geojsonData) return;
+
+    if (markerLayer) {
+      map.removeLayer(markerLayer);
+    }
+
+    let visibleCount = 0;
+
+    markerLayer = L.geoJSON(geojsonData, {
+
+      filter: function(feature) {
+
+        
+
+        const geometry = feature.geometry;
+
+        const isPoint =
+          geometry &&
+          (
+            geometry.type === "Point" ||
+            geometry.type === "MultiPoint"
+          );
+
+        const value = getValue(
+          feature.properties || {},
+          selectedVariable
+        );
+
+        if (isPoint && value !== null) {
+          visibleCount++;
+          return true;
+        }
+
+        return false;
+      },
+
+      pointToLayer: function(feature, latlng) {
+
+        const marker = L.circleMarker(
+          latlng,
+          markerStyle(feature)
+        );
+
+        marker.on("mouseover", function() {
+          const value = getValue(feature.properties || {}, selectedVariable);
+          this.setStyle({
+            weight: 3,
+            color: "#111111",
+            radius: calcRadius(value) + 3
+          });
+          this.bringToFront();
+        });
+
+        marker.on("mouseout", function() {
+          this.setStyle(markerStyle(feature));
+        });
+
+        return marker;
+      },
+
+      onEachFeature: function(feature, layer) {
+
+        const value = getValue(
+          feature.properties || {},
+          selectedVariable
+        );
+
+        layer.bindTooltip(
+          variables[selectedVariable].label +
+          ": " +
+          formatValue(value, selectedVariable)
+        );
+
+        layer.bindPopup(
+          createPopup(feature),
+          { maxWidth: 260 }
+        );
+      }
+
+    }).addTo(map);
+
+    document.getElementById("status")
+      .textContent =
+      visibleCount.toLocaleString() +
+      " sampling records with " +
+      variables[selectedVariable].label +
+      " measurements.";
+
+  }
+
+
+  const legend = L.control({
+    position: "bottomright"
+  });
+
+  legend.onAdd = function() {
+
+    this._div = L.DomUtil.create(
+      "div", "legend"
+    );
+
+    L.DomEvent.disableClickPropagation(
+      this._div
+    );
+
+    L.DomEvent.disableScrollPropagation(
+      this._div
+    );
+
+    this.update();
+
+    return this._div;
+  };
+
+  
+legend.update = function() {
+
+    if (!this._div) return;
+
+    const config = variables[selectedVariable];
+
+    // Reference values for the proportional circles
+    const legendValues = {
+        ecoli: [1000, 250, 10],
+        ph: [14, 7, 2],
+        oxygen: [15, 8, 2],
+        temperature: [40, 20, 5]
+    };
+
+    const values = legendValues[selectedVariable];
+
+    // Calculate circle radii using the SAME
+    // function as the map symbols.
+    const radii = values.map(function(value) {
+        return calcRadius(value);
+    });
+
+    // Scale up circles for legend visibility
+    const scale = 2.2;
+
+    const r1 = radii[0] * scale;
+    const r2 = radii[1] * scale;
+    const r3 = radii[2] * scale;
+
+    // Align all circles along their bottom edges
+    const centerX = 85;
+    const bottomY = 150;
+
+    let html = `
+        <h3>${config.label}</h3>
+
+        <div class="legend-description">
+            ${config.description}
+        </div>
+
+        <p style="font-size:12px;">
+            Circle size represents ${config.label}
+            (${config.unit})
+        </p>
+
+        <svg width="220" height="175"
+             viewBox="0 0 220 175">
+
+            <circle
+                cx="${centerX}"
+                cy="${bottomY - r1}"
+                r="${r1}"
+                fill="#8bbba8"
+                fill-opacity="0.65"
+                stroke="#263a32"
+                stroke-width="1.2"
+            />
+
+            <circle
+                cx="${centerX}"
+                cy="${bottomY - r2}"
+                r="${r2}"
+                fill="#8bbba8"
+                fill-opacity="0.65"
+                stroke="#263a32"
+                stroke-width="1.2"
+            />
+
+            <circle
+                cx="${centerX}"
+                cy="${bottomY - r3}"
+                r="${r3}"
+                fill="#8bbba8"
+                stroke="#263a32"
+                stroke-width="1.2"
+            />
+
+            <text x="165" y="40" font-size="12">
+                ${values[0].toLocaleString()}
+            </text>
+
+            <text x="165" y="95" font-size="12">
+                ${values[1].toLocaleString()}
+            </text>
+
+            <text x="165" y="150" font-size="12">
+                ${values[2].toLocaleString()}
+            </text>
+
+        </svg>
+
+        <p style="font-size:11px; color:#666;">
+            Larger circles indicate higher values.
+        </p>
+
+        <hr>
+
+        <p style="font-size:12px;">
+            <strong>Measurement colors</strong>
+        </p>
+    `;
+
+    // Keep your existing color legend
+    for (let i = 0; i < config.colors.length; i++) {
+
+        html += `
+            <div class="legend-row">
+                <span class="legend-dot"
+                      style="background:${config.colors[i]}">
+                </span>
+
+                <span>${config.labels[i]}</span>
+            </div>
+        `;
+    }
+
+    html += `
+        <div class="legend-note">
+            Units: ${config.unit}<br>
+            Classes are illustrative.
+        </div>
+    `;
+
+    this._div.innerHTML = html;
+};
+
+
+  legend.addTo(map);
+
+
+  document.querySelectorAll(
+    'input[name="variable"]'
+  ).forEach(function(radio) {
+
+    radio.addEventListener(
+      "change",
+      function(event) {
+
+        selectedVariable =
+          event.target.value;
+
+        document.getElementById(
+          "active-variable"
+        ).textContent =
+          variables[selectedVariable].label +
+          " Monitoring Locations";
+
+        drawMarkers();
+
+        legend.update();
+
+      }
+    );
+  });
+
+
+
+  fetch("assets/data.geojson")
+
+    .then(function(response) {
+
+      if (!response.ok) {
+        throw new Error(
+          "GeoJSON could not be loaded: " +
+          response.status
+        );
+      }
+
+      return response.json();
+    })
+
+    .then(function(data) {
+
+      geojsonData = data;
+
+      drawMarkers();
+
+      const allPoints = L.geoJSON(data, {
+        filter: feature =>
+          feature.geometry &&
+          (
+            feature.geometry.type === "Point" ||
+            feature.geometry.type === "MultiPoint"
+          )
+      });
+
+      const bounds = allPoints.getBounds();
+
+      if (bounds.isValid()) {
+        map.fitBounds(bounds.pad(0.08), {
+          maxZoom: 11
+        });
+      }
+
+    })
+
+    .catch(function(error) {
+
+      console.error(error);
+
+      document.getElementById(
+        "status"
+      ).textContent =
+        "Error loading data. Check the " +
+        "GeoJSON path and browser console.";
+
+    });
+
+</script>
+
+</body>
+</html>
